@@ -9,7 +9,8 @@ import Dashboard from './pages/Dashboard';
 import './App.css';
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // For demonstration purposes, set default authentication to true
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
 
   // Check if user is authenticated on mount

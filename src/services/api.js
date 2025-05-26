@@ -1,55 +1,51 @@
-import axios from 'axios';
-import { API_URL } from '../utils/constants';
+/**
+ * API Service for ZooBase
+ * Handles all API requests with authentication
+ */
 
-// Create an axios instance with default configuration
-const apiClient = axios.create({
-  baseURL: API_URL,
+import axios from 'axios';
+
+const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
+// Create axios instance with base configuration
+const instance = axios.create({
+  baseURL,
   headers: {
     'Content-Type': 'application/json'
   }
 });
 
-// Request interceptor for API calls
-apiClient.interceptors.request.use(
+// Add request interceptor for attaching the auth token
+instance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('zoobase_token');
     if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
-    Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor for API calls
-apiClient.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  async (error) => {
-    const originalRequest = error.config;
-    
-    // Handle token expiration and refresh
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
+// Add response interceptor for handling errors
+instance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Handle specific error status codes
+    if (error.response) {
+      const { status } = error.response;
       
-      try {
-        // In a real app, we would request a new token using the refresh token
-        // const refreshToken = localStorage.getItem('refresh_token');
-        // const res = await axios.post(`${API_URL}/auth/refresh`, { refreshToken });
-        // localStorage.setItem('zoobase_token', res.data.token);
-        // return apiClient(originalRequest);
-        
-        // For development, just log out the user on token expiration
+      // Handle 401 Unauthorized - redirect to login
+      if (status === 401) {
         localStorage.removeItem('zoobase_token');
-        window.location.href = '/login';
-        
-      } catch (_error) {
-        localStorage.removeItem('zoobase_token');
-        window.location.href = '/login';
-        return Promise.reject(_error);
+        // In a real app, we would redirect to login or trigger an auth context method
+        console.log('Session expired. Redirecting to login page.');
+        // window.location.href = '/login';
+      }
+      
+      // Handle 403 Forbidden
+      if (status === 403) {
+        console.log('You do not have permission to access this resource.');
       }
     }
     
@@ -57,98 +53,39 @@ apiClient.interceptors.response.use(
   }
 );
 
-// Helper functions for common API operations
+// API service with common methods
 const api = {
+  // Auth methods
   setAuthToken: (token) => {
-    localStorage.setItem('zoobase_token', token);
+    if (token) {
+      instance.defaults.headers.common.Authorization = `Bearer ${token}`;
+    } else {
+      delete instance.defaults.headers.common.Authorization;
+    }
   },
   
   removeAuthToken: () => {
-    localStorage.removeItem('zoobase_token');
+    delete instance.defaults.headers.common.Authorization;
   },
   
-  // Animals
-  getAnimals: (params = {}) => {
-    return apiClient.get('/animals', { params });
+  // Generic request methods
+  get: (url, config = {}) => instance.get(url, config),
+  post: (url, data = {}, config = {}) => instance.post(url, data, config),
+  put: (url, data = {}, config = {}) => instance.put(url, data, config),
+  patch: (url, data = {}, config = {}) => instance.patch(url, data, config),
+  delete: (url, config = {}) => instance.delete(url, config),
+  
+  // Animal specific endpoints
+  animals: {
+    getAll: (params = {}) => instance.get('/animals', { params }),
+    getById: (id) => instance.get(`/animals/${id}`),
+    create: (data) => instance.post('/animals', data),
+    update: (id, data) => instance.put(`/animals/${id}`, data),
+    delete: (id) => instance.delete(`/animals/${id}`),
+    getObservations: (id) => instance.get(`/animals/${id}/observations`),
   },
   
-  getAnimal: (id) => {
-    return apiClient.get(`/animals/${id}`);
-  },
-  
-  createAnimal: (data) => {
-    return apiClient.post('/animals', data);
-  },
-  
-  updateAnimal: (id, data) => {
-    return apiClient.put(`/animals/${id}`, data);
-  },
-  
-  deleteAnimal: (id) => {
-    return apiClient.delete(`/animals/${id}`);
-  },
-  
-  // Medical records
-  getAnimalMedicalHistory: (animalId, params = {}) => {
-    return apiClient.get(`/animals/${animalId}/medical`, { params });
-  },
-  
-  createMedicalRecord: (animalId, data) => {
-    return apiClient.post(`/medical`, { ...data, animalId });
-  },
-  
-  updateMedicalRecord: (id, data) => {
-    return apiClient.put(`/medical/${id}`, data);
-  },
-  
-  // Observations
-  getAnimalObservations: (animalId, params = {}) => {
-    return apiClient.get(`/animals/${animalId}/observations`, { params });
-  },
-  
-  createObservation: (data) => {
-    return apiClient.post('/observations', data);
-  },
-  
-  // Habitats
-  getHabitats: (params = {}) => {
-    return apiClient.get('/habitats', { params });
-  },
-  
-  getHabitat: (id) => {
-    return apiClient.get(`/habitats/${id}`);
-  },
-  
-  // Tasks
-  getTasks: (params = {}) => {
-    return apiClient.get('/tasks', { params });
-  },
-  
-  createTask: (data) => {
-    return apiClient.post('/tasks', data);
-  },
-  
-  updateTaskStatus: (id, status) => {
-    return apiClient.patch(`/tasks/${id}/status`, { status });
-  },
-  
-  // User
-  getCurrentUser: () => {
-    return apiClient.get('/auth/me');
-  },
-  
-  login: (credentials) => {
-    return apiClient.post('/auth/login', credentials);
-  },
-  
-  register: (userData) => {
-    return apiClient.post('/auth/register', userData);
-  },
-  
-  // Dashboard
-  getDashboardData: () => {
-    return apiClient.get('/dashboard');
-  }
+  // Other resource endpoints can be added here
 };
 
 export default api;
