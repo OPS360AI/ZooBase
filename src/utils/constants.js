@@ -32,6 +32,17 @@ export const STATUS = {
   RECOVERING: 'Recovering',
 };
 
+// Animal status codes
+export const ANIMAL_STATUS = {
+  HEALTHY: 'Healthy',
+  OBSERVATION: 'Under Observation',
+  CRITICAL: 'Critical',
+  QUARANTINE: 'Quarantine',
+  TREATMENT: 'Under Treatment',
+  DECEASED: 'Deceased',
+  TRANSFERRED: 'Transferred'
+};
+
 // Animal classifications
 export const ANIMAL_CLASSIFICATIONS = [
   'Mammals',

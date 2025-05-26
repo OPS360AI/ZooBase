@@ -11,6 +11,7 @@ import './App.css';
 // Lazy load components
 const AnimalList = lazy(() => import('./pages/animals/AnimalList'));
 const AnimalDetail = lazy(() => import('./pages/animals/AnimalDetail'));
+const NewAnimal = lazy(() => import('./pages/animals/NewAnimal'));
 
 function App() {
   // For demonstration purposes, set default authentication to true
@@ -83,6 +84,16 @@ function App() {
                       isAuthenticated ? (
                         <Suspense fallback={<div className="loading-spinner">Loading...</div>}>
                           <AnimalList />
+                        </Suspense>
+                      ) : <Navigate to="/login" replace />
+                    } 
+                  />
+                  <Route 
+                    path="/animals/new" 
+                    element={
+                      isAuthenticated ? (
+                        <Suspense fallback={<div className="loading-spinner">Loading...</div>}>
+                          <NewAnimal />
                         </Suspense>
                       ) : <Navigate to="/login" replace />
                     } 
