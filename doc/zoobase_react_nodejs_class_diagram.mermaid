@@ -1,0 +1,248 @@
+classDiagram
+  class Animal {
+    +_id: ObjectId
+    +name: string
+    +species: string
+    +taxon: object
+    +identifiers: object
+    +dateOfBirth: Date
+    +sex: string
+    +status: string
+    +location: object
+    +physicalAttributes: object[]
+    +medicalStatus: object
+    +getFullProfile() object
+    +updateStatus(status) void
+    +updateLocation(location) void
+    +recordWeight(value) void
+    +getHealthTimeline() object[]
+  }
+  
+  class Habitat {
+    +_id: ObjectId
+    +name: string
+    +type: string
+    +location: object
+    +capacity: object
+    +currentOccupants: ObjectId[]
+    +environmentalControls: object
+    +environmentalReadings: object[]
+    +status: string
+    +addAnimal(animalId) void
+    +removeAnimal(animalId) void
+    +recordEnvironmentalReading(reading) void
+    +isAtCapacity() boolean
+    +getOccupantDetails() object[]
+  }
+  
+  class MedicalRecord {
+    +_id: ObjectId
+    +animal: ObjectId
+    +recordType: string
+    +datePerformed: Date
+    +status: string
+    +performedBy: ObjectId[]
+    +diagnosisList: string[]
+    +medications: object[]
+    +labResults: object[]
+    +followUp: object
+    +scheduleFollowUp(date, notes) void
+    +updateStatus(status) void
+    +addMedication(medication) void
+    +recordLabResult(result) void
+    +getMedicationSchedule() object[]
+  }
+  
+  class Observation {
+    +_id: ObjectId
+    +animal: ObjectId
+    +observationType: string
+    +timestamp: Date
+    +observer: ObjectId
+    +description: string
+    +location: object
+    +flags: object
+    +media: object[]
+    +addMedia(mediaItem) void
+    +flagForAttention(flag, value) void
+    +getRelatedObservations() object[]
+    +linkToMedicalRecord(recordId) void
+  }
+  
+  class User {
+    +_id: ObjectId
+    +username: string
+    +email: string
+    +passwordHash: string
+    +role: string
+    +permissions: string[]
+    +active: boolean
+    +preferences: object
+    +authenticate(password) boolean
+    +hasPermission(permission) boolean
+    +updatePreferences(prefs) void
+    +updatePassword(newPassword) void
+    +getAssignedTasks() object[]
+  }
+  
+  class Notification {
+    +_id: ObjectId
+    +type: string
+    +priority: string
+    +title: string
+    +message: string
+    +recipients: object[]
+    +context: object
+    +createdAt: Date
+    +send() void
+    +markAsRead(userId) void
+    +isExpired() boolean
+    +escalatePriority() void
+    +getDeliveryStatus() object
+  }
+  
+  class Task {
+    +_id: ObjectId
+    +title: string
+    +taskType: string
+    +priority: string
+    +status: string
+    +dueDate: Date
+    +assignedTo: object[]
+    +relatedTo: object
+    +complete(completionDetails) void
+    +reassign(userId) void
+    +updateStatus(status) void
+    +addComment(comment) void
+    +scheduleReminder(minutes) void
+    +isOverdue() boolean
+  }
+
+  class AnimalService {
+    +createAnimal(animalData) Animal
+    +getAnimal(id) Animal
+    +updateAnimal(id, updateData) Animal
+    +deleteAnimal(id) boolean
+    +listAnimals(filters, pagination) object
+    +updateAnimalStatus(id, status, notes) Animal
+    +updateAnimalLocation(id, location) Animal
+    +getHealthTimeline(id) object[]
+    +addAnimalMedia(id, mediaItem) Animal
+  }
+
+  class MedicalService {
+    +createMedicalRecord(recordData) MedicalRecord
+    +getMedicalRecord(id) MedicalRecord
+    +getAnimalMedicalHistory(animalId) MedicalRecord[]
+    +scheduleTreatment(animalId, treatmentData) MedicalRecord
+    +recordTreatment(recordId, treatmentData) MedicalRecord
+    +prescribeMedication(recordId, medicationData) MedicalRecord
+    +recordLabResult(recordId, labResultData) MedicalRecord
+    +scheduleFollowUp(recordId, followUpData) MedicalRecord
+  }
+
+  class ObservationService {
+    +createObservation(observationData) Observation
+    +getObservation(id) Observation
+    +listAnimalObservations(animalId, filters, pagination) object
+    +recordBehavior(animalId, behaviorData) Observation
+    +recordFeeding(animalId, feedingData) Observation
+    +recordEnrichmentActivity(animalId, enrichmentData) Observation
+    +recordSocialInteraction(observationData) Observation
+    +detectBehavioralChanges(animalId, timeframe) object
+  }
+
+  class HabitatService {
+    +createHabitat(habitatData) Habitat
+    +getHabitat(id) Habitat
+    +addAnimalToHabitat(habitatId, animalId) Habitat
+    +removeAnimalFromHabitat(habitatId, animalId) Habitat
+    +getHabitatOccupants(habitatId) Animal[]
+    +recordEnvironmentalReading(habitatId, readingData) Habitat
+    +getEnvironmentalHistory(habitatId, parameter, startDate, endDate) object[]
+  }
+
+  class NotificationService {
+    +createNotification(notificationData) Notification
+    +sendNotification(notification) object
+    +notifyUser(userId, notification) object
+    +sendAnimalAlert(animalId, alert) object
+    +markAsRead(notificationId, userId) Notification
+    +getUserNotifications(userId, filters, pagination) object
+    +subscribeToAnimal(userId, animalId) object
+    +subscribeToHabitat(userId, habitatId) object
+  }
+
+  class TaskService {
+    +createTask(taskData) Task
+    +getTask(id) Task
+    +getUserTasks(userId, filters, pagination) object
+    +assignTaskToUser(taskId, userId) Task
+    +updateTaskStatus(taskId, status, notes) Task
+    +completeTask(taskId, completionData) Task
+    +scheduleRecurringTask(taskData) object
+    +setTaskReminder(taskId, reminderData) Task
+  }
+
+  class UserService {
+    +registerUser(userData) object
+    +authenticateUser(credentials) object
+    +getUser(id) User
+    +updateUser(id, userData) User
+    +listUsers(filters, pagination) object
+    +assignRole(userId, role) User
+    +grantPermission(userId, permission) User
+    +updateUserPreferences(userId, preferences) User
+  }
+
+  class SocketService {
+    +initializeSocketServer() void
+    +handleConnection(socket) void
+    +subscribeToChannel(socket, channel) void
+    +unsubscribeFromChannel(socket, channel) void
+    +broadcast(channel, event, data) void
+    +broadcastToUser(userId, event, data) void
+    +emitAnimalUpdate(animalId, updateData) void
+    +emitAnimalAlert(animalId, alertData) void
+    +updateUserPresence(userId, status) void
+  }
+
+  class AnalyticsService {
+    +getAnimalGrowthStats(animalId, timeframe) object
+    +getHealthTrends(animalId, parameters, timeframe) object
+    +getBehaviorPatterns(animalId, timeframe) object
+    +getActivityLevels(animalId, timeframe) object
+    +getEnvironmentalCorrelations(habitatId, animalId) object
+    +generateAnimalReport(animalId, reportType, timeframe) object
+  }
+
+  %% Relationships
+  Animal "1" -- "0..*" MedicalRecord: has
+  Animal "1" -- "0..*" Observation: tracked through
+  Animal "0..*" -- "0..1" Habitat: housed in
+  Habitat "1" -- "0..*" Observation: location of
+  User "1" -- "0..*" Observation: records
+  User "1" -- "0..*" Task: assigned to
+  User "1" -- "0..*" MedicalRecord: performs
+  Notification "0..*" -- "1..*" User: sent to
+  Task "0..*" -- "0..1" Animal: related to
+  Task "0..*" -- "0..1" Habitat: related to
+  Task "0..*" -- "0..1" MedicalRecord: related to
+  Animal "0..*" -- "0..1" Animal: parent of
+
+  %% Service relationships
+  AnimalService -- Animal: manages
+  MedicalService -- MedicalRecord: manages
+  ObservationService -- Observation: manages
+  HabitatService -- Habitat: manages
+  NotificationService -- Notification: manages
+  TaskService -- Task: manages
+  UserService -- User: manages
+  AnimalService -- NotificationService: uses
+  MedicalService -- AnimalService: uses
+  ObservationService -- AnimalService: uses
+  TaskService -- NotificationService: uses
+  SocketService -- NotificationService: uses
+  AnalyticsService -- AnimalService: uses
+  AnalyticsService -- MedicalService: uses
+  AnalyticsService -- ObservationService: uses

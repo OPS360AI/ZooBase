@@ -1,0 +1,178 @@
+sequenceDiagram
+    participant C as Client (React)
+    participant API as API Gateway
+    participant WS as WebSocket Server
+    participant AS as AnimalService
+    participant MS as MedicalService
+    participant OS as ObservationService
+    participant HS as HabitatService
+    participant NS as NotificationService
+    participant TS as TaskService
+    participant R as Redis
+    participant DB as MongoDB
+    participant ES as Elasticsearch
+
+    %% User Authentication
+    C->>+API: authenticateUser(credentials)
+    API->>DB: Validate credentials
+    DB-->>API: User data
+    API->>API: Generate JWT token
+    API-->>-C: Return user data and token
+
+    %% WebSocket Connection
+    C->>+WS: connect(token)
+    WS->>WS: validateToken(token)
+    WS->>R: registerConnection(userId, socketId)
+    WS-->>-C: connectionEstablished
+
+    %% Subscribe to Updates
+    C->>+WS: subscribeToAnimal(animalId)
+    WS->>R: addSubscription(userId, "animal:" + animalId)
+    WS-->>-C: subscriptionConfirmed
+
+    %% Dashboard Loading
+    C->>+API: getAssignedAnimals()
+    API->>+AS: listAnimals(filters)
+    AS->>DB: Query animals
+    DB-->>AS: Animal data
+    AS-->>-API: Animal list
+    API-->>-C: Animal list
+
+    %% Animal Detail View
+    C->>+API: getAnimalDetails(animalId)
+    API->>+AS: getAnimal(animalId)
+    AS->>DB: Query animal
+    DB-->>AS: Animal data
+    AS-->>-API: Animal data
+    API->>+MS: getAnimalMedicalHistory(animalId)
+    MS->>DB: Query medical records
+    DB-->>MS: Medical records
+    MS-->>-API: Medical history
+    API->>+OS: listAnimalObservations(animalId)
+    OS->>DB: Query observations
+    DB-->>OS: Observation data
+    OS-->>-API: Observations
+    API-->>-C: Complete animal details
+
+    %% Recording New Observation
+    C->>+API: createObservation(observationData)
+    API->>+OS: createObservation(observationData)
+    OS->>DB: Insert observation
+    DB-->>OS: Confirmation
+    OS->>R: publish("animal:" + animalId, observation)
+    OS-->>-API: Observation data
+    API-->>-C: Confirmation
+
+    %% Real-time Update
+    R->>WS: message("animal:" + animalId, observation)
+    WS->>C: emit("observation:created", observation)
+
+    %% Health Alert Detection
+    OS->>+OS: detectAbnormalBehavior(observationData)
+    OS->>+NS: createAnimalAlert(animalId, alertData)
+    NS->>DB: Insert notification
+    DB-->>NS: Confirmation
+    NS->>R: publish("animal:alert:" + animalId, alertData)
+    NS-->>-OS: Alert created
+    OS-->>-API: Alert triggered
+
+    %% Alert Notification
+    R->>WS: message("animal:alert:" + animalId, alertData)
+    WS->>C: emit("animal:alert", alertData)
+
+    %% Update Animal Status
+    C->>+API: updateAnimalStatus(animalId, status, notes)
+    API->>+AS: updateAnimalStatus(animalId, status, notes)
+    AS->>DB: Update animal
+    DB-->>AS: Confirmation
+    AS->>R: publish("animal:" + animalId, statusUpdate)
+    AS-->>-API: Updated animal data
+    API-->>-C: Confirmation
+
+    %% Real-time Status Update
+    R->>WS: message("animal:" + animalId, statusUpdate)
+    WS->>C: emit("animal:updated", statusUpdate)
+
+    %% Schedule Medical Treatment
+    C->>+API: scheduleTreatment(animalId, treatmentData)
+    API->>+MS: scheduleTreatment(animalId, treatmentData)
+    MS->>DB: Insert medical record
+    DB-->>MS: Confirmation
+    MS->>+AS: updateAnimalMedicalStatus(animalId, status)
+    AS->>DB: Update animal
+    DB-->>AS: Confirmation
+    AS-->>-MS: Updated animal
+    MS->>+TS: createTask(treatmentTask)
+    TS->>DB: Insert task
+    DB-->>TS: Confirmation
+    TS->>R: publish("task:created", taskData)
+    TS-->>-MS: Task created
+    MS->>R: publish("animal:" + animalId, medicalUpdate)
+    MS-->>-API: Treatment scheduled
+    API-->>-C: Confirmation
+
+    %% Real-time Medical Update
+    R->>WS: message("animal:" + animalId, medicalUpdate)
+    WS->>C: emit("medical:scheduled", medicalUpdate)
+
+    %% Environmental Reading Update
+    Note over HS,R: Automated sensor reading
+    HS->>+HS: recordEnvironmentalReading(habitatId, readingData)
+    HS->>DB: Update habitat
+    DB-->>HS: Confirmation
+    HS->>R: publish("habitat:" + habitatId, readingData)
+    HS-->>-HS: Reading recorded
+
+    %% Environmental Alert Detection
+    HS->>+HS: checkEnvironmentalParameters(readingData)
+    HS->>+NS: createHabitatAlert(habitatId, alertData)
+    NS->>DB: Insert notification
+    DB-->>NS: Confirmation
+    NS->>R: publish("habitat:alert:" + habitatId, alertData)
+    NS-->>-HS: Alert created
+    HS-->>-HS: Alert triggered
+
+    %% Habitat Alert Distribution
+    R->>WS: message("habitat:alert:" + habitatId, alertData)
+    WS->>C: emit("habitat:alert", alertData)
+
+    %% Task Assignment
+    C->>+API: assignTaskToUser(taskId, userId)
+    API->>+TS: assignTaskToUser(taskId, userId)
+    TS->>DB: Update task
+    DB-->>TS: Confirmation
+    TS->>+NS: notifyUser(userId, assignmentNotification)
+    NS->>DB: Insert notification
+    DB-->>NS: Confirmation
+    NS->>R: publish("user:" + userId, notificationData)
+    NS-->>-TS: Notification sent
+    TS->>R: publish("task:" + taskId, assignmentUpdate)
+    TS-->>-API: Task assigned
+    API-->>-C: Confirmation
+
+    %% User Notification
+    R->>WS: message("user:" + userId, notificationData)
+    WS->>C: emit("notification:received", notificationData)
+
+    %% Search Animals
+    C->>+API: searchAnimals(query)
+    API->>+ES: search(query)
+    ES-->>-API: Search results
+    API-->>-C: Animal search results
+
+    %% Real-time Analytics Dashboard
+    C->>+API: getAnimalActivityMetrics(animalId, timeframe)
+    API->>+OS: getBehaviorPatterns(animalId, timeframe)
+    OS->>DB: Aggregate observations
+    DB-->>OS: Aggregated data
+    OS-->>-API: Behavior patterns
+    API->>+HS: getEnvironmentalCorrelations(habitatId, animalId)
+    HS->>DB: Aggregate environmental data
+    DB-->>HS: Aggregated data
+    HS-->>-API: Environmental correlations
+    API-->>-C: Complete metrics data
+
+    %% User Disconnection
+    C->>WS: disconnect()
+    WS->>R: removeSubscriptions(userId)
+    WS->>R: unregisterConnection(userId, socketId)
