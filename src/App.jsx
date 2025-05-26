@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './socket/SocketProvider';
@@ -7,6 +7,10 @@ import Sidebar from './components/layout/Sidebar';
 import Footer from './components/layout/Footer';
 import Dashboard from './pages/Dashboard';
 import './App.css';
+
+// Lazy load components
+const AnimalList = lazy(() => import('./pages/animals/AnimalList'));
+const AnimalDetail = lazy(() => import('./pages/animals/AnimalDetail'));
 
 function App() {
   // For demonstration purposes, set default authentication to true
@@ -71,7 +75,29 @@ function App() {
                     path="/" 
                     element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} 
                   />
-
+                  
+                  {/* Animal routes */}
+                  <Route 
+                    path="/animals" 
+                    element={
+                      isAuthenticated ? (
+                        <Suspense fallback={<div className="loading-spinner">Loading...</div>}>
+                          <AnimalList />
+                        </Suspense>
+                      ) : <Navigate to="/login" replace />
+                    } 
+                  />
+                  <Route 
+                    path="/animals/:id" 
+                    element={
+                      isAuthenticated ? (
+                        <Suspense fallback={<div className="loading-spinner">Loading...</div>}>
+                          <AnimalDetail />
+                        </Suspense>
+                      ) : <Navigate to="/login" replace />
+                    } 
+                  />
+                  
                   {/* Fallback route */}
                   <Route path="*" element={<div>Page Not Found</div>} />
                 </Routes>
